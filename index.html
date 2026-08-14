@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FocusFlow — Time Management</title>
+<style>
+:root{
+  --bg:#f5f7fb; --card:#fff; --text:#172033; --muted:#6b7280;
+  --primary:#4f46e5; --primary2:#6366f1; --border:#e5e7eb;
+  --green:#16a34a; --red:#dc2626; --shadow:0 10px 30px rgba(31,41,55,.08);
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:Inter,system-ui,-apple-system,Segoe UI,sans-serif;background:var(--bg);color:var(--text)}
+header{background:linear-gradient(135deg,#4338ca,#6366f1);color:#fff;padding:22px 5%;display:flex;justify-content:space-between;align-items:center}
+.logo{font-size:24px;font-weight:800}.date{opacity:.9}
+.container{max-width:1200px;margin:28px auto;padding:0 20px}
+.grid{display:grid;grid-template-columns:1.1fr .9fr;gap:22px}
+.card{background:var(--card);border:1px solid var(--border);border-radius:18px;padding:22px;box-shadow:var(--shadow);margin-bottom:22px}
+h2{margin:0 0 16px;font-size:20px}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.stat{padding:18px;border-radius:14px;background:#f8fafc;border:1px solid var(--border)}
+.stat b{font-size:27px;display:block;margin-top:5px}.stat span{color:var(--muted);font-size:13px}
+.task-form{display:grid;grid-template-columns:1fr 140px 110px;gap:10px}
+input,select,button{font:inherit;border-radius:10px;padding:11px 12px;border:1px solid var(--border)}
+button{cursor:pointer;border:0;background:var(--primary);color:white;font-weight:700}
+button:hover{background:#4338ca}.secondary{background:#eef2ff;color:#3730a3}.danger{background:#fee2e2;color:#991b1b}
+.task{display:flex;align-items:center;gap:12px;padding:14px 0;border-bottom:1px solid var(--border)}
+.task:last-child{border-bottom:0}.task input{width:18px;height:18px}.task-title{flex:1}.completed{text-decoration:line-through;color:#9ca3af}
+.badge{font-size:12px;padding:5px 9px;border-radius:999px;background:#eef2ff;color:#4338ca}
+.priority-high{background:#fee2e2;color:#991b1b}.priority-medium{background:#fef3c7;color:#92400e}
+.timer{text-align:center}.timer-display{font-size:64px;font-weight:800;letter-spacing:2px;margin:20px 0}
+.timer-controls{display:flex;justify-content:center;gap:10px}.progress{height:10px;background:#e5e7eb;border-radius:99px;overflow:hidden}.progress div{height:100%;background:var(--primary);width:0%;transition:.3s}
+.schedule{display:grid;gap:10px}.slot{display:grid;grid-template-columns:95px 1fr;gap:12px;align-items:center}
+.slot-time{font-weight:700;color:var(--muted);font-size:13px}.slot-body{padding:12px;border-left:4px solid var(--primary);background:#f8fafc;border-radius:8px}
+.empty{text-align:center;color:var(--muted);padding:20px}
+footer{text-align:center;color:var(--muted);padding:10px 20px 30px;font-size:13px}
+@media(max-width:850px){.grid{grid-template-columns:1fr}.task-form{grid-template-columns:1fr}.stats{grid-template-columns:1fr}.date{display:none}}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">⚡ FocusFlow</div>
+  <div class="date" id="today"></div>
+</header>
+
+<div class="container">
+  <div class="card">
+    <h2>📊 Today's Overview</h2>
+    <div class="stats">
+      <div class="stat"><span>Tasks Completed</span><b id="completedCount">0</b></div>
+      <div class="stat"><span>Total Tasks</span><b id="totalCount">0</b></div>
+      <div class="stat"><span>Focus Minutes</span><b id="focusMinutes">0</b></div>
+    </div>
+  </div>
+
+  <div class="grid">
+    <main>
+      <div class="card">
+        <h2>✅ Today's Tasks</h2>
+        <div class="task-form">
+          <input id="taskInput" placeholder="e.g. Study Python for 60 minutes">
+          <select id="priority">
+            <option value="low">Low Priority</option>
+            <option value="medium" selected>Medium Priority</option>
+            <option value="high">High Priority</option>
+          </select>
+          <button onclick="addTask()">Add Task</button>
+        </div>
+        <div id="taskList" style="margin-top:14px"></div>
+      </div>
+
+      <div class="card">
+        <h2>🗓️ Daily Study Schedule</h2>
+        <div class="schedule">
+          <div class="slot"><div class="slot-time">6:30 AM</div><div class="slot-body">Wake up + exercise + breakfast</div></div>
+          <div class="slot"><div class="slot-time">8:00 AM</div><div class="slot-body">🎓 College</div></div>
+          <div class="slot"><div class="slot-time">3:00 PM</div><div class="slot-body">Lunch + rest</div></div>
+          <div class="slot"><div class="slot-time">4:00 PM</div><div class="slot-body">🐍 Python / Pandas</div></div>
+          <div class="slot"><div class="slot-time">6:00 PM</div><div class="slot-body">☁️ AWS / Django</div></div>
+          <div class="slot"><div class="slot-time">8:00 PM</div><div class="slot-body">📚 College subjects + revision</div></div>
+          <div class="slot"><div class="slot-time">10:30 PM</div><div class="slot-body">Plan tomorrow + sleep preparation</div></div>
+        </div>
+      </div>
+    </main>
+
+    <aside>
+      <div class="card timer">
+        <h2>⏱️ Focus Timer</h2>
+        <div class="timer-display" id="timer">25:00</div>
+        <div class="progress"><div id="progress"></div></div>
+        <div class="timer-controls" style="margin-top:18px">
+          <button onclick="startTimer()">Start</button>
+          <button class="secondary" onclick="pauseTimer()">Pause</button>
+          <button class="danger" onclick="resetTimer()">Reset</button>
+        </div>
+        <div style="margin-top:18px;color:var(--muted);font-size:13px">Pomodoro: 25 min focus → 5 min break</div>
+      </div>
+
+      <div class="card">
+        <h2>🎯 Study Priorities</h2>
+        <p>1. Python + Pandas</p>
+        <p>2. College subjects</p>
+        <p>3. AWS</p>
+        <p>4. Django</p>
+        <p>5. Revision / projects</p>
+      </div>
+    </aside>
+  </div>
+</div>
+
+<footer>FocusFlow saves your tasks and progress in your browser.</footer>
+
+<script>
+let tasks = JSON.parse(localStorage.getItem("focusflow_tasks") || "[]");
+let focusMinutes = Number(localStorage.getItem("focusflow_minutes") || 0);
+let seconds = 25 * 60, timerInterval = null, running = false;
+
+document.getElementById("today").textContent =
+  new Date().toLocaleDateString("en-IN",{weekday:"long",year:"numeric",month:"long",day:"numeric"});
+
+function save(){localStorage.setItem("focusflow_tasks",JSON.stringify(tasks));localStorage.setItem("focusflow_minutes",focusMinutes)}
+function render(){
+  const list=document.getElementById("taskList");
+  list.innerHTML="";
+  if(!tasks.length){list.innerHTML='<div class="empty">No tasks yet. Add your first task.</div>'}
+  tasks.forEach((t,i)=>{
+    const div=document.createElement("div");div.className="task";
+    div.innerHTML=`<input type="checkbox" ${t.done?"checked":""} onchange="toggleTask(${i})">
+      <div class="task-title ${t.done?"completed":""}">${escapeHtml(t.title)}</div>
+      <span class="badge ${t.priority==="high"?"priority-high":t.priority==="medium"?"priority-medium":""}">${t.priority}</span>
+      <button class="danger" onclick="deleteTask(${i})">×</button>`;
+    list.appendChild(div);
+  });
+  document.getElementById("completedCount").textContent=tasks.filter(t=>t.done).length;
+  document.getElementById("totalCount").textContent=tasks.length;
+  document.getElementById("focusMinutes").textContent=focusMinutes;
+}
+function escapeHtml(s){return s.replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]))}
+function addTask(){
+  const input=document.getElementById("taskInput"), title=input.value.trim();
+  if(!title)return;
+  tasks.push({title,priority:document.getElementById("priority").value,done:false});
+  input.value="";save();render();
+}
+function toggleTask(i){tasks[i].done=!tasks[i].done;save();render()}
+function deleteTask(i){tasks.splice(i,1);save();render()}
+document.getElementById("taskInput").addEventListener("keydown",e=>{if(e.key==="Enter")addTask()});
+
+function updateTimer(){
+  const m=String(Math.floor(seconds/60)).padStart(2,"0"), s=String(seconds%60).padStart(2,"0");
+  document.getElementById("timer").textContent=`${m}:${s}`;
+  document.getElementById("progress").style.width=((1500-seconds)/1500*100)+"%";
+}
+function startTimer(){
+  if(running)return;
+  running=true;
+  timerInterval=setInterval(()=>{
+    if(seconds>0){seconds--;updateTimer()}
+    else{
+      clearInterval(timerInterval);running=false;focusMinutes+=25;save();render();
+      alert("🎉 Focus session complete! Take a 5-minute break.");
+      resetTimer();
+    }
+  },1000);
+}
+function pauseTimer(){clearInterval(timerInterval);running=false}
+function resetTimer(){clearInterval(timerInterval);running=false;seconds=1500;updateTimer()}
+render();updateTimer();
+</script>
+</body>
+</html>
